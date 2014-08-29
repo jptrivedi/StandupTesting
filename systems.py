@@ -46,6 +46,9 @@ class system_operator(object):
     def install(self):
         pass
 
+    def install_old(self, version):
+        pass
+
     def start(self):
         pass
 
@@ -55,7 +58,7 @@ class system_operator(object):
     def restart(self):
         pass
 
-    def check_installed(self):
+    def check_installed(self, version=None):
         pass
 
     def check_started(self):
@@ -78,9 +81,16 @@ class debian_operator(system_operator):
 
     def install(self):
         sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
-        sudo('echo deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen > /etc/apt/sources.list.d/mongodb.list')
+        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
         sudo('apt-get update')
         sudo('apt-get -y install mongodb-org')
+
+    def install_old(self, version):
+        sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
+        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
+        sudo('apt-get update')
+        sudo('apt-get -y install mongodb-org=' + version +  ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
+
 
     def start(self):
         sudo('service mongod start')
@@ -91,12 +101,19 @@ class debian_operator(system_operator):
     def restart(self):
         sudo('service mongod restart')
 
-    def check_installed(self):
+    def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
                             self.locations['config_loc'], 
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
+
+        if version is not None:
+            #confirm the binaries are of the correct version
+            foundversion = run(self.locations['mongod_bin_loc'] + ' --version')
+            if version != foundversion:
+                abort_with_message(basemsg + 'version is not correct')
+
 
     def check_started(self):
         basemsg = 'check_started failed: '
@@ -126,9 +143,15 @@ class ubuntu_operator(system_operator):
 
     def install(self):
         sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
-        sudo('echo deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen > /etc/apt/sources.list.d/mongodb.list')
+        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
         sudo('apt-get update')
         sudo('apt-get -y install mongodb-org')
+
+    def install_old(self, version):
+        sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
+        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
+        sudo('apt-get update')
+        sudo('apt-get -y install mongodb-org=' + version + ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
 
     def start(self):
         sudo('service mongod start')
@@ -139,12 +162,16 @@ class ubuntu_operator(system_operator):
     def restart(self):
         sudo('service mongod restart')
 
-    def check_installed(self):
+    def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
                             self.locations['config_loc'], 
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
+        if version is not None:
+            foundversion = run(self.locations['mongod_bin_loc'] + ' --version')
+            if version not in foundversion:
+                abort_with_message(basemsg + 'version is not correct')
 
     def check_started(self):
         basemsg = 'check_mongod_started failed: '
@@ -173,6 +200,12 @@ class rhel_operator(system_operator):
         append('/etc/yum.repos.d/mongodb.repo', repo)
         sudo('yum -y install mongodb-org')
 
+    def install_old(self):
+        repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
+        append('/etc/yum.repos.d/mongodb.repo', repo)
+        sudo('sudo yum -y install mongodb-org-2.6.1 mongodb-org-server-2.6.1 mongodb-org-shell-2.6.1 mongodb-org-mongos-2.6.1 mongodb-org-tools-2.6.1')
+
+
     def start(self):
         sudo('service mongod start')
 
@@ -182,12 +215,16 @@ class rhel_operator(system_operator):
     def restart(self):
         sudo('service mongod restart')
 
-    def check_installed(self):
+    def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
                             self.locations['config_loc'], 
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
+        if version is not None:
+            foundversion = run(self.locations['mongod_bin_loc'] + ' --version')
+            if version not in foundversion:
+                abort_with_message(basemsg + 'version is not correct')
 
     def check_started(self):
         basemsg = 'check_mongod_started failed: '

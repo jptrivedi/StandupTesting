@@ -23,6 +23,19 @@ def run_through_test(sysname='ubuntu'):
     else:
         abort_with_message('Could not find system: ' + sysname)
 
+    operator.install_old('2.6.1')
+    operator.check_installed(version='2.6.1')
+
+    operator.start()
+    operator.check_started()
+
+    operator.restart()
+    operator.check_started()
+
+    operator.stop()
+    operator.check_stopped()
+
+    #install current / upgrade
     operator.install()
     operator.check_installed()
 
