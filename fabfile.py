@@ -21,7 +21,7 @@ def run_through_test(sysname='ubuntu'):
     elif sysname == 'rhel':
         operator = systems.rhel_operator()
     else:
-        abort_with_message('Could not find system: ' + sysname)
+        systems.abort_with_message('Could not find system: ' + sysname)
 
     operator.install_old('2.6.1')
     operator.check_installed(version='2.6.1')
