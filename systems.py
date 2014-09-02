@@ -197,13 +197,13 @@ class rhel_operator(system_operator):
 
     def install(self):
         repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
-        append('/etc/yum.repos.d/mongodb.repo', repo)
+        append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
         sudo('yum -y install mongodb-org')
 
-    def install_old(self):
+    def install_old(self, version):
         repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
-        append('/etc/yum.repos.d/mongodb.repo', repo)
-        sudo('sudo yum -y install mongodb-org-2.6.1 mongodb-org-server-2.6.1 mongodb-org-shell-2.6.1 mongodb-org-mongos-2.6.1 mongodb-org-tools-2.6.1')
+        append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
+        sudo('sudo yum -y install mongodb-org-' + version + ' mongodb-org-server-' + version + ' mongodb-org-shell-' + version +' mongodb-org-mongos-' + version + ' mongodb-org-tools-' + version)
 
 
     def start(self):
