@@ -43,10 +43,10 @@ class system_operator(object):
     def __init__(self):
         pass
 
-    def install(self):
+    def install(self, enterprise=False):
         pass
 
-    def install_old(self, version):
+    def install_old(self, version, enterprise=False):
         pass
 
     def start(self):
@@ -79,17 +79,30 @@ class debian_operator(system_operator):
         self.locations['lock_file_loc'] = '/var/lib/mongodb/mongod.lock'
         self.locations['pid_file_loc'] = '/var/run/mongod.pid'
 
-    def install(self):
-        sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
-        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
-        sudo('apt-get update')
-        sudo('apt-get -y install mongodb-org')
+    def install(self, enterprise=False):
+        if enterprise:
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb-enterprise.list', 'deb http://repo.mongodb.com/apt/debian wheezy/mongodb-enterprise/stable main', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-enterprise')
+        else:
+            sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-org')
 
-    def install_old(self, version):
-        sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
-        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
-        sudo('apt-get update')
-        sudo('apt-get -y install mongodb-org=' + version +  ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
+    def install_old(self, version, enterprise=False):
+        if enterprise: 
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10')
+            #Note that versioning works differently here version should be something like '2.6' not '2.6.1'
+            append('/etc/apt/sources.list.d/mongodb-enterprise.list', 'deb http://repo.mongodb.com/apt/debian wheezy/mongodb-enterprise/' + version + ' main', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-enterprise')
+        else:
+            sudo('apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/debian-sysvinit dist 10gen', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-org=' + version +  ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
 
 
     def start(self):
@@ -132,7 +145,7 @@ class debian_operator(system_operator):
 
 
 class ubuntu_operator(system_operator):
-    def __init__(self):
+    def __init__(self, ubuntuname):
         self.name = 'ubuntu'
         self.locations = {}
         self.locations['config_loc'] = '/etc/mongod.conf'
@@ -140,18 +153,31 @@ class ubuntu_operator(system_operator):
         self.locations['data_dir_loc'] = '/var/lib/mongodb'
         self.locations['log_loc'] = '/var/log/mongodb/mongod.log'
         self.locations['lock_file_loc'] = '/var/lib/mongodb/mongod.lock'
+        self.ubuntuname = ubuntuname
 
-    def install(self):
-        sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
-        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
-        sudo('apt-get update')
-        sudo('apt-get -y install mongodb-org')
+    def install(self, enterprise=False):
+        if enterprise:
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb-enterprise.list', 'deb http://repo.mongodb.com/apt/ubuntu ' + self.ubuntuname + '/mongodb-enterprise/stable multiverse', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-enterprise')
+        else:
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-org')
 
-    def install_old(self, version):
-        sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
-        append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
-        sudo('apt-get update')
-        sudo('apt-get -y install mongodb-org=' + version + ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
+    def install_old(self, version, enterprise=False):
+        if enterprise:
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb-enterprise.list', 'deb http://repo.mongodb.com/apt/ubuntu ' + self.ubuntuname + '/mongodb-enterprise/stable multiverse', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-enterprise=' + version + ' mongodb-enterprise-server=' + version + ' mongodb-enterprise-shell=' + version + ' mongodb-enterprise-mongos=' + version + ' mongodb-enterprise-tools=' + version)
+        else:
+            sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com --recv 7F0CEB10')
+            append('/etc/apt/sources.list.d/mongodb.list', 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen', use_sudo=True)
+            sudo('apt-get update')
+            sudo('apt-get -y install mongodb-org=' + version + ' mongodb-org-server=' + version + ' mongodb-org-shell=' + version + ' mongodb-org-mongos=' + version + ' mongodb-org-tools=' + version)
 
     def start(self):
         sudo('service mongod start')
@@ -185,7 +211,7 @@ class ubuntu_operator(system_operator):
                             self.locations['lock_file_loc'])
 
 class rhel_operator(system_operator):
-    def __init__(self):
+    def __init__(self, version):
         self.name = 'rhel'
         self.locations = {}
         self.locations['config_loc'] = '/etc/mongod.conf'
@@ -194,16 +220,30 @@ class rhel_operator(system_operator):
         self.locations['log_loc'] = '/var/log/mongodb/mongod.log'
         self.locations['lock_file_loc'] = '/var/lib/mongo/mongod.lock'
         self.locations['pid_file_loc'] = '/var/run/mongodb/mongod.pid'
+        self.version = version
 
-    def install(self):
-        repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
-        append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
-        sudo('yum -y install mongodb-org')
+    def install(self, enterprise=False):
+        if self.version == 7:
+            #TODO rhel 7 is missing sudo so we need to work around that
+            pass
+        if enterprise:
+            repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+            append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
+            sudo('yum -y install mongodb-enterprise')
+        else:
+            repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
+            append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
+            sudo('yum -y install mongodb-org')
 
-    def install_old(self, version):
-        repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
-        append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
-        sudo('sudo yum -y install mongodb-org-' + version + ' mongodb-org-server-' + version + ' mongodb-org-shell-' + version +' mongodb-org-mongos-' + version + ' mongodb-org-tools-' + version)
+    def install_old(self, version, enterprise=False):
+        if enterprise:
+            repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+            append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
+            sudo('yum -y install mongodb-enterprise-2.6.1 mongodb-enterprise-server-2.6.1 mongodb-enterprise-shell-2.6.1 mongodb-enterprise-mongos-2.6.1 mongodb-enterprise-tools-2.6.1')
+        else:
+            repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
+            append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
+            sudo('yum -y install mongodb-org-' + version + ' mongodb-org-server-' + version + ' mongodb-org-shell-' + version +' mongodb-org-mongos-' + version + ' mongodb-org-tools-' + version)
 
 
     def start(self):

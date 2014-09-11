@@ -10,22 +10,27 @@ from fabric.utils import abort
 
 env.warn_only = True
 
-def run_through_test(sysname='ubuntu'):
-    #get our operator
+def get_operator(sysname):
     #TODO use getattr here to load the class
     operator = None
     if sysname == 'debian':
         operator = systems.debian_operator()
-    elif sysname == 'ubuntu':
-        operator = systems.ubuntu_operator()
-    elif sysname == 'rhel':
-        operator = systems.rhel_operator()
+    elif sysname == 'ubuntu14':
+        operator = systems.ubuntu_operator('trusty')
+    elif sysname == 'ubuntu12':
+        operator = systems.ubuntu_operator('precise')
+    elif sysname == 'rhel7':
+        operator = systems.rhel_operator(7)
+    elif sysname == 'rhel6':
+        operator = systems.rhel_operator(6)
+    elif sysname == 'rhel5':
+        operator = systems.rhel_operator(5)
     else:
         systems.abort_with_message('Could not find system: ' + sysname)
 
-    operator.install_old('2.6.1')
-    operator.check_installed(version='2.6.1')
+    return operator
 
+def execute_start_stop_tests(operator):
     operator.start()
     operator.check_started()
 
@@ -34,18 +39,18 @@ def run_through_test(sysname='ubuntu'):
 
     operator.stop()
     operator.check_stopped()
+
+def run_through_test(sysname='ubuntu', enterprise=False, upgrade=True):
+    operator = get_operator(sysname)
+
+    if upgrade:
+        operator.install_old('2.6.1', enterprise=enterprise)
+        operator.check_installed(version='2.6.1')
+        execute_start_stop_tests(operator)
 
     #install current / upgrade
-    operator.install()
+    operator.install(enterprise=enterprise)
     operator.check_installed()
-
-    operator.start()
-    operator.check_started()
-
-    operator.restart()
-    operator.check_started()
-
-    operator.stop()
-    operator.check_stopped()
+    execute_start_stop_tests(operator)
 
     print "SUCCEEDED"
