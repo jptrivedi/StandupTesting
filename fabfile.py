@@ -10,7 +10,7 @@ from fabric.utils import abort
 
 env.warn_only = True
 
-def get_operator(sysname):
+def get_operator(sysname, spawn_host):
     #TODO use getattr here to load the class
     operator = None
     if sysname == 'debian':
@@ -20,11 +20,11 @@ def get_operator(sysname):
     elif sysname == 'ubuntu12':
         operator = systems.ubuntu_operator('precise')
     elif sysname == 'rhel7':
-        operator = systems.rhel_operator(7)
+        operator = systems.rhel_operator(7, spawn_host)
     elif sysname == 'rhel6':
-        operator = systems.rhel_operator(6)
+        operator = systems.rhel_operator(6, spawn_host)
     elif sysname == 'rhel5':
-        operator = systems.rhel_operator(5)
+        operator = systems.rhel_operator(5, spawn_host)
     else:
         systems.abort_with_message('Could not find system: ' + sysname)
 
@@ -40,8 +40,16 @@ def execute_start_stop_tests(operator):
     operator.stop()
     operator.check_stopped()
 
-def run_through_test(sysname='ubuntu', enterprise=False, upgrade=True):
-    operator = get_operator(sysname)
+def str_to_bool(s):
+    if s.lower() in ('True', 'true'):
+        return True
+    else:
+        return False
+
+def run_through_test(sysname='ubuntu', enterprise=False, upgrade=True, spawn_host=True):
+    operator = get_operator(sysname, spawn_host)
+    upgrade = str_to_bool(upgrade)
+    enterprise = str_to_bool(enterprise)
 
     if upgrade:
         operator.install_old('2.6.1', enterprise=enterprise)

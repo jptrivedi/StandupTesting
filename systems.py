@@ -4,7 +4,7 @@ from fabric.utils import abort
 
 #utility functions
 def abort_with_message(message):
-    abort(message)   
+    abort(message)
 
 def basic_install_check(message, config_loc, mongod_bin_loc, data_dir_loc):
     #check existence of config file
@@ -92,7 +92,7 @@ class debian_operator(system_operator):
             sudo('apt-get -y install mongodb-org')
 
     def install_old(self, version, enterprise=False):
-        if enterprise: 
+        if enterprise:
             sudo('apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10')
             #Note that versioning works differently here version should be something like '2.6' not '2.6.1'
             append('/etc/apt/sources.list.d/mongodb-enterprise.list', 'deb http://repo.mongodb.com/apt/debian wheezy/mongodb-enterprise/' + version + ' main', use_sudo=True)
@@ -117,7 +117,7 @@ class debian_operator(system_operator):
     def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
-                            self.locations['config_loc'], 
+                            self.locations['config_loc'],
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
 
@@ -191,7 +191,7 @@ class ubuntu_operator(system_operator):
     def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
-                            self.locations['config_loc'], 
+                            self.locations['config_loc'],
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
         if version is not None:
@@ -211,7 +211,7 @@ class ubuntu_operator(system_operator):
                             self.locations['lock_file_loc'])
 
 class rhel_operator(system_operator):
-    def __init__(self, version):
+    def __init__(self, version, spawn_host):
         self.name = 'rhel'
         self.locations = {}
         self.locations['config_loc'] = '/etc/mongod.conf'
@@ -221,15 +221,18 @@ class rhel_operator(system_operator):
         self.locations['lock_file_loc'] = '/var/lib/mongo/mongod.lock'
         self.locations['pid_file_loc'] = '/var/run/mongodb/mongod.pid'
         self.version = version
+        self.spawn_host = spawn_host
 
     def install(self, enterprise=False):
-        if self.version == 7:
-            #TODO rhel 7 is missing sudo so we need to work around that
-            pass
         if enterprise:
-            repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
-            append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
-            sudo('yum -y install mongodb-enterprise')
+            if self.version == 7 and self.spawn_host:
+                repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+                append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo)
+                run('yum -y install mongodb-enterprise')
+            else:
+                repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+                append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
+                sudo('yum -y install mongodb-enterprise')
         else:
             repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
             append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
@@ -237,9 +240,14 @@ class rhel_operator(system_operator):
 
     def install_old(self, version, enterprise=False):
         if enterprise:
-            repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
-            append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
-            sudo('yum -y install mongodb-enterprise-2.6.1 mongodb-enterprise-server-2.6.1 mongodb-enterprise-shell-2.6.1 mongodb-enterprise-mongos-2.6.1 mongodb-enterprise-tools-2.6.1')
+            if self.version == 7 and self.spawn_host:
+                repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+                append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo)
+                run('yum -y install mongodb-enterprise')
+            else:
+                repo = '[mongodb-enterprise]\nname=MongoDB Enterprise Repository\nbaseurl=https://repo.mongodb.com/yum/redhat/$releasever/mongodb-enterprise/stable/$basearch/\ngpgcheck=0\nenabled=1\n'
+                append('/etc/yum.repos.d/mongodb-enterprise-2.6.repo', repo, use_sudo=True)
+                sudo('yum -y install mongodb-enterprise-2.6.1 mongodb-enterprise-server-2.6.1 mongodb-enterprise-shell-2.6.1 mongodb-enterprise-mongos-2.6.1 mongodb-enterprise-tools-2.6.1')
         else:
             repo = '[mongodb]\nname=MongoDB Repository\nbaseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/\ngpgcheck=0\nenabled=1\n'
             append('/etc/yum.repos.d/mongodb.repo', repo, use_sudo=True)
@@ -247,18 +255,27 @@ class rhel_operator(system_operator):
 
 
     def start(self):
-        sudo('service mongod start')
+        if self.version == 7 and self.spawn_host:
+            run("service mongod start")
+        else:
+            sudo('service mongod start')
 
     def stop(self):
-        sudo('service mongod stop')
+        if self.version == 7 and self.spawn_host:
+            run("service mongod stop")
+        else:
+            sudo('service mongod stop')
 
     def restart(self):
-        sudo('service mongod restart')
+        if self.version == 7 and self.spawn_host:
+            run("service mongod restart")
+        else:
+            sudo('service mongod restart')
 
     def check_installed(self, version=None):
         basemsg = 'check_installed failed: '
         basic_install_check(basemsg,
-                            self.locations['config_loc'], 
+                            self.locations['config_loc'],
                             self.locations['mongod_bin_loc'],
                             self.locations['data_dir_loc'])
         if version is not None:
