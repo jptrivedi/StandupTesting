@@ -13,7 +13,7 @@ env.warn_only = True
 def get_operator(sysname, spawn_host):
     #TODO use getattr here to load the class
     operator = None
-    if sysname == 'debian':
+    if sysname == 'debian7':
         operator = systems.debian_operator()
     elif sysname == 'ubuntu14':
         operator = systems.ubuntu_operator('trusty')
@@ -25,6 +25,8 @@ def get_operator(sysname, spawn_host):
         operator = systems.rhel_operator(6, spawn_host)
     elif sysname == 'rhel5':
         operator = systems.rhel_operator(5, spawn_host)
+    elif sysname == 'suse11':
+        operator = systems.suse_operator(11, spawn_host)
     else:
         systems.abort_with_message('Could not find system: ' + sysname)
 
@@ -52,8 +54,8 @@ def run_through_test(sysname='ubuntu', enterprise=False, upgrade=True, spawn_hos
     enterprise = str_to_bool(enterprise)
 
     if upgrade:
-        operator.install_old('2.6.1', enterprise=enterprise)
-        operator.check_installed(version='2.6.1')
+        operator.install_old('2.6.5', enterprise=enterprise)
+        operator.check_installed(version='2.6.5')
         execute_start_stop_tests(operator)
 
     #install current / upgrade
